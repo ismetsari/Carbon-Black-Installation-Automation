@@ -1,0 +1,73 @@
+---
+- name: Installing Carbon Black Agent and its dependencies
+  hosts: all
+  gather_facts: yes
+
+  tasks:
+    - name: Gather the rpm package facts
+      package_facts:
+        manager: auto
+
+    - name: Check if kernel-devel package is installed
+      set_fact:
+        is_kernel_devel_installed: "{{ 1 if 'kernel-devel' in ansible_facts.packages else 0 }}"
+
+    - name: Check whether a package named kernel-devel is installed
+      debug:
+        msg: "kernel-devel package is a dependency for Carbon Black installation. Agent is already installed on this server."
+      when: "'kernel-devel' in ansible_facts.packages"
+
+    - name: Register to subscription manager if not already registered (Red Hat Enterprise Linux 7)
+      shell: |
+        subscription-manager register --org="TT_Mobil" --activationkey="TEST_Redhat_7"
+        yum install -y kernel-devel
+      when: is_kernel_devel_installed == '0' and ansible_distribution_major_version == '7'
+      ignore_errors: true
+    
+    - name: Register to subscription manager if not already registered (Red Hat Enterprise Linux 8)
+      shell: |
+        subscription-manager register --org="TT_Mobil" --activationkey="TEST_Redhat_8"
+        subscription-manager release --set=8.6
+        yum install -y kernel-devel
+      when: is_kernel_devel_installed == '0' and ansible_distribution_major_version == '8'
+      ignore_errors: true
+
+    - name: Check whether a package called Carbon Black is installed
+      debug:
+        msg: "Carbon Black is installed."
+      when: "'Carbon Black' in ansible_facts.packages"
+
+    - name: Carbon Black Installation
+      block:
+        - name: Creating directories
+          file:
+            path: /tmp/agents
+            state: directory
+            mode: '0755'
+
+        - name: Copying tar Files to the destination node
+          copy:
+            src: /ansible/agents-repo/carbonblack/CarbonBlackLinuxInstaller.tar.gz
+            dest: /tmp/agents
+
+        - name: Unarchiving tar file in source node
+          unarchive:
+            src: /tmp/agents/CarbonBlackLinuxInstaller.tar.gz
+            dest: /tmp/agents
+            remote_src: yes
+            mode: '0777'
+
+        - name: Installation
+          shell: |
+            /tmp/agents/CarbonBlackClientSetup-linux-v7.2.0.90725.sh --ent-suite
+
+        - name: Deleting temporary directory
+          file:
+            path: /tmp/agents
+            state: absent
+
+        - name: Unregistering from subscription manager
+          shell : |
+            subscription-manager unregister
+            subscription-manager clean
+            subscription-manager remove --all
