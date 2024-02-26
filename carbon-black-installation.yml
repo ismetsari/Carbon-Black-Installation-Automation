@@ -19,14 +19,14 @@
 
     - name: Register to subscription manager if not already registered (Red Hat Enterprise Linux 7)
       shell: |
-        subscription-manager register --org="TT_Mobil" --activationkey="TEST_Redhat_7"
+         <Your_Red_Hat_7.x_Subscription_Manager_Activation-Key_Comes_Here>
         yum install -y kernel-devel
       when: is_kernel_devel_installed == '0' and ansible_distribution_major_version == '7'
       ignore_errors: true
     
     - name: Register to subscription manager if not already registered (Red Hat Enterprise Linux 8)
       shell: |
-        subscription-manager register --org="TT_Mobil" --activationkey="TEST_Redhat_8"
+         <Your_Red_Hat_8.x_Subscription_Manager_Activation-Key_Comes_Here>
         subscription-manager release --set=8.6
         yum install -y kernel-devel
       when: is_kernel_devel_installed == '0' and ansible_distribution_major_version == '8'
@@ -47,19 +47,19 @@
 
         - name: Copying tar Files to the destination node
           copy:
-            src: /ansible/agents-repo/carbonblack/CarbonBlackLinuxInstaller.tar.gz
+            src: <path-of-your-tar-file-comes-here>
             dest: /tmp/agents
 
         - name: Unarchiving tar file in source node
           unarchive:
-            src: /tmp/agents/CarbonBlackLinuxInstaller.tar.gz
+            src: <path-of-your-tar-file-in-source-node-comes-here>
             dest: /tmp/agents
             remote_src: yes
             mode: '0777'
 
         - name: Installation
           shell: |
-            /tmp/agents/CarbonBlackClientSetup-linux-v7.2.0.90725.sh --ent-suite
+            <Install shell script e.g -> ./carbonblack.sh>
 
         - name: Deleting temporary directory
           file:
